@@ -1,41 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Habituation Timer</title>
-  
+
   <!-- Web App Manifest -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#6366f1">
-  
+
   <!-- iOS Standalone Support -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="HabitTimer">
   <link rel="apple-touch-icon" href="icon-192.png">
-  
+
   <!-- App Stylesheet -->
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <!-- Visual Alarm Screen Flash Overlay -->
   <div id="flash-overlay" class="flash-overlay"></div>
 
   <div class="app-container">
-    
+
     <!-- Header -->
     <header class="app-header">
       <div class="app-title-container">
         <!-- SVG stopwatch icon -->
-        <svg class="app-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <polyline points="12 6 12 12 16 14"/>
-          <line x1="12" y1="2" x2="12" y2="4"/>
+        <svg class="app-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+          <line x1="12" y1="2" x2="12" y2="4" />
         </svg>
         <h1>Habituation Timer</h1>
       </div>
-      
+
       <!-- Badges row -->
       <div class="status-bar">
         <span id="badge-earbuds" class="badge">🔊 Speakers Active</span>
@@ -51,17 +54,20 @@
 
     <!-- MAIN PANEL -->
     <main class="glass-panel">
-      
+
       <!-- CONFIGURATION SCREEN -->
       <div id="config-screen" class="config-group">
-        
+
         <!-- Section 1: Total Duration -->
         <div>
           <div class="config-section-title">1. Total Duration</div>
           <div class="time-inputs">
-            <input type="number" id="total-hrs" class="time-field" placeholder="00" min="0" max="23" value="00" data-max="23">:
-            <input type="number" id="total-mins" class="time-field" placeholder="30" min="0" max="59" value="30" data-max="59">:
-            <input type="number" id="total-secs" class="time-field" placeholder="00" min="0" max="59" value="00" data-max="59">
+            <input type="number" id="total-hrs" class="time-field" placeholder="00" min="0" max="23" value="00"
+              data-max="23">:
+            <input type="number" id="total-mins" class="time-field" placeholder="30" min="0" max="59" value="30"
+              data-max="59">:
+            <input type="number" id="total-secs" class="time-field" placeholder="00" min="0" max="59" value="00"
+              data-max="59">
           </div>
         </div>
 
@@ -72,18 +78,24 @@
             <div class="time-input-container">
               <label for="delay-mins">Start Delay</label>
               <div class="time-inputs">
-                <input type="number" id="delay-hrs" class="time-field" placeholder="00" min="0" max="23" value="00" data-max="23">:
-                <input type="number" id="delay-mins" class="time-field" placeholder="05" min="0" max="59" value="05" data-max="59">:
-                <input type="number" id="delay-secs" class="time-field" placeholder="00" min="0" max="59" value="00" data-max="59">
+                <input type="number" id="delay-hrs" class="time-field" placeholder="00" min="0" max="23" value="00"
+                  data-max="23">:
+                <input type="number" id="delay-mins" class="time-field" placeholder="05" min="0" max="59" value="05"
+                  data-max="59">:
+                <input type="number" id="delay-secs" class="time-field" placeholder="00" min="0" max="59" value="00"
+                  data-max="59">
               </div>
             </div>
-            
+
             <div class="time-input-container">
               <label for="int-mins">Interval Frequency</label>
               <div class="time-inputs">
-                <input type="number" id="int-hrs" class="time-field" placeholder="00" min="0" max="23" value="00" data-max="23">:
-                <input type="number" id="int-mins" class="time-field" placeholder="05" min="0" max="59" value="05" data-max="59">:
-                <input type="number" id="int-secs" class="time-field" placeholder="00" min="0" max="59" value="00" data-max="59">
+                <input type="number" id="int-hrs" class="time-field" placeholder="00" min="0" max="23" value="00"
+                  data-max="23">:
+                <input type="number" id="int-mins" class="time-field" placeholder="05" min="0" max="59" value="05"
+                  data-max="59">:
+                <input type="number" id="int-secs" class="time-field" placeholder="00" min="0" max="59" value="00"
+                  data-max="59">
               </div>
             </div>
           </div>
@@ -100,7 +112,7 @@
         <!-- Section 3: Preferences & Alerts -->
         <div>
           <div class="config-section-title">3. Preferences</div>
-          
+
           <div class="toggle-row">
             <div class="toggle-info">
               <span class="toggle-label">Keep Screen Awake</span>
@@ -155,8 +167,9 @@
         <!-- Action Button -->
         <div class="btn-container">
           <button id="start-btn" class="btn-primary">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="5 3 19 12 5 21 5 3"/>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3" />
             </svg>
             Start Timer Session
           </button>
@@ -166,19 +179,19 @@
 
       <!-- ACTIVE TIMER RUNNING SCREEN -->
       <div id="timer-screen" class="timer-view">
-        
+
         <!-- Large Circular Progress Ring -->
         <div class="timer-display-container">
           <svg class="progress-rings-svg" viewBox="0 0 80 80">
             <!-- Outer Total Progress Circle (R=36) -->
             <circle class="ring-track" cx="40" cy="40" r="36" stroke-width="2.5" />
             <circle id="ring-total-circle" class="ring-total" cx="40" cy="40" r="36" stroke-width="2.5" />
-            
+
             <!-- Inner Interval Progress Circle (R=32) -->
             <circle class="ring-track" cx="40" cy="40" r="32" stroke-width="1.5" />
             <circle id="ring-interval-circle" class="ring-interval" cx="40" cy="40" r="32" stroke-width="1.5" />
           </svg>
-          
+
           <div class="timer-text-overlay">
             <div id="remaining-time-text" class="time-remaining">00:30:00</div>
             <div class="timer-label">Remaining</div>
@@ -202,10 +215,11 @@
         <div class="voice-panel" style="width: 100%; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem;">
           <div class="mic-button-container">
             <button id="mic-btn" class="mic-btn" aria-label="Record voice note">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                <line x1="12" y1="19" x2="12" y2="22"/>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" y1="19" x2="12" y2="22" />
               </svg>
             </button>
           </div>
@@ -238,4 +252,5 @@
   <!-- Scripts -->
   <script src="app.js?v=2"></script>
 </body>
+
 </html>
