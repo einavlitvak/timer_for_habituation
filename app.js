@@ -1,5 +1,5 @@
 // PWA Update / Cache-Busting Mechanism
-const APP_VERSION = '7';
+const APP_VERSION = '8';
 if (localStorage.getItem('app_version') !== APP_VERSION) {
   localStorage.setItem('app_version', APP_VERSION);
   if ('serviceWorker' in navigator) {
@@ -84,8 +84,16 @@ document.addEventListener('DOMContentLoaded', () => {
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('Service Worker registered successfully:', reg.scope))
+      .then(reg => {
+        console.log('Service Worker registered successfully:', reg.scope);
+      })
       .catch(err => console.warn('Service Worker registration failed:', err));
+      
+    // Reload page immediately when a new SW takes over
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      console.log('New Service Worker activated. Reloading page...');
+      window.location.reload();
+    });
   }
 }
 
@@ -670,10 +678,37 @@ function stopVoiceListening() {
   } catch (err) {}
 }
 
+let activeTTSAudios = [];
+
 function speakOut(text) {
-  if (!voiceNotesEnabled || !('speechSynthesis' in window)) return;
+  if (!voiceNotesEnabled) return;
   
-  // If the app is in the background, speech synthesis will be blocked by the mobile OS.
+  // Format network TTS audio matching system language
+  const lang = (navigator.language || 'en').split('-')[0];
+  const encodedText = encodeURIComponent(text);
+  const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodedText}`;
+  
+  const ttsAudio = new Audio(ttsUrl);
+  activeTTSAudios.push(ttsAudio);
+  
+  ttsAudio.onended = ttsAudio.onerror = () => {
+    activeTTSAudios = activeTTSAudios.filter(a => a !== ttsAudio);
+  };
+  
+  ttsAudio.play()
+    .then(() => {
+      console.log("Playing network TTS background audio.");
+    })
+    .catch(err => {
+      console.warn("Background TTS audio failed, using Web Speech API fallback:", err);
+      playSpeechNative(text);
+    });
+}
+
+function playSpeechNative(text) {
+  if (!('speechSynthesis' in window)) return;
+  
+  // If the app is in the background, native speech synthesis will be blocked by the mobile OS.
   // We queue the note to be read aloud the moment the user brings the app back to focus.
   if (document.visibilityState === 'hidden') {
     pendingSpeechText = text;
