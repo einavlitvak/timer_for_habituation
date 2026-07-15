@@ -1,5 +1,5 @@
 // PWA Update / Cache-Busting Mechanism
-const APP_VERSION = '6';
+const APP_VERSION = '7';
 if (localStorage.getItem('app_version') !== APP_VERSION) {
   localStorage.setItem('app_version', APP_VERSION);
   if ('serviceWorker' in navigator) {
@@ -40,6 +40,15 @@ let wakeLockEnabled = true;
 let alertMode = 'both'; // 'sound', 'vibrate', 'both'
 let soundType = 'chime'; // 'beep', 'double', 'chime', 'woodblock', 'ascending'
 let voiceNotesEnabled = true;
+let vibrationPattern = 'double'; // 'double', 'light', 'heartbeat', 'strong', 'sos'
+
+const vibrationPatterns = {
+  double: [150, 100, 250],
+  light: [80],
+  heartbeat: [100, 100, 250],
+  strong: [500],
+  sos: [100, 100, 100, 100, 100, 100, 300, 100, 300, 100, 300, 100, 100, 100, 100, 100, 100]
+};
 
 // Web Audio API
 let audioCtx = null;
@@ -99,6 +108,7 @@ let elTestSoundBtn;
 let elInstallBanner, elInstallBtn;
 let elPreIntervalsContainer;
 let elPrevIntervalBtn, elNextIntervalBtn;
+let elVibratePatternSelect;
 
 function initDOMElements() {
   elTotalHrs = document.getElementById('total-hrs');
@@ -153,6 +163,7 @@ function initDOMElements() {
   elPreIntervalsContainer = document.getElementById('pre-intervals-container');
   elPrevIntervalBtn = document.getElementById('prev-interval-btn');
   elNextIntervalBtn = document.getElementById('next-interval-btn');
+  elVibratePatternSelect = document.getElementById('vibrate-pattern');
 }
 
 // Preset configurations
@@ -265,6 +276,10 @@ function setupEventListeners() {
 
   elSoundTypeSelect.addEventListener('change', (e) => {
     soundType = e.target.value;
+  });
+
+  elVibratePatternSelect.addEventListener('change', (e) => {
+    vibrationPattern = e.target.value;
   });
 
   elVoiceNotesToggle.addEventListener('change', (e) => {
@@ -503,8 +518,8 @@ function testSound() {
 function triggerVibration() {
   if ('vibrate' in navigator) {
     if (alertMode === 'vibrate' || alertMode === 'both') {
-      // Elegant vibration pattern (2 short bursts)
-      navigator.vibrate([150, 100, 250]);
+      const pattern = vibrationPatterns[vibrationPattern] || vibrationPatterns.double;
+      navigator.vibrate(pattern);
     }
   }
 }
@@ -1064,7 +1079,7 @@ function showLocalNotification(title, message) {
           body: message,
           icon: './icon-192.png',
           badge: './icon-192.png',
-          vibrate: [150, 100, 250],
+          vibrate: vibrationPatterns[vibrationPattern] || vibrationPatterns.double,
           tag: 'habituation-timer-signal',
           renotify: true,
           requireInteraction: false
