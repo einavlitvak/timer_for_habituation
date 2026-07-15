@@ -1,5 +1,5 @@
 // PWA Update / Cache-Busting Mechanism
-const APP_VERSION = '5';
+const APP_VERSION = '6';
 if (localStorage.getItem('app_version') !== APP_VERSION) {
   localStorage.setItem('app_version', APP_VERSION);
   if ('serviceWorker' in navigator) {
@@ -55,6 +55,7 @@ let earbudsDetected = false;
 let activeConfigMicIndex = null;
 let activeConfigMicBtn = null;
 let preConfiguredNotes = [];
+let pendingSpeechText = null; // Missed background speech notes queue
 
 let deferredPrompt = null;
 
@@ -543,8 +544,19 @@ function releaseWakeLock() {
 }
 
 function handleVisibilityChange() {
-  if (wakeLock !== null && document.visibilityState === 'visible') {
-    requestWakeLock();
+  if (document.visibilityState === 'visible') {
+    if (wakeLock !== null) {
+      requestWakeLock();
+    }
+    
+    // Play back any speech note missed while in the background
+    if (pendingSpeechText) {
+      const textToSpeak = pendingSpeechText;
+      pendingSpeechText = null;
+      setTimeout(() => {
+        speakOut(textToSpeak);
+      }, 300);
+    }
   }
 }
 
@@ -643,9 +655,17 @@ function stopVoiceListening() {
   } catch (err) {}
 }
 
-// Text to Speech Instructions
 function speakOut(text) {
   if (!voiceNotesEnabled || !('speechSynthesis' in window)) return;
+  
+  // If the app is in the background, speech synthesis will be blocked by the mobile OS.
+  // We queue the note to be read aloud the moment the user brings the app back to focus.
+  if (document.visibilityState === 'hidden') {
+    pendingSpeechText = text;
+    console.log("Speech queued for foreground:", text);
+    return;
+  }
+  
   window.speechSynthesis.cancel(); // Stop any currently speaking speech
   const utterance = new SpeechSynthesisUtterance(text);
   
