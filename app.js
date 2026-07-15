@@ -1,5 +1,5 @@
 // PWA Update / Cache-Busting Mechanism
-const APP_VERSION = '9';
+const APP_VERSION = '10';
 if (localStorage.getItem('app_version') !== APP_VERSION) {
   localStorage.setItem('app_version', APP_VERSION);
   if ('serviceWorker' in navigator) {
@@ -88,7 +88,7 @@ function registerServiceWorker() {
         console.log('Service Worker registered successfully:', reg.scope);
       })
       .catch(err => console.warn('Service Worker registration failed:', err));
-      
+
     // Reload page immediately when a new SW takes over
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       console.log('New Service Worker activated. Reloading page...');
@@ -122,43 +122,43 @@ function initDOMElements() {
   elTotalHrs = document.getElementById('total-hrs');
   elTotalMins = document.getElementById('total-mins');
   elTotalSecs = document.getElementById('total-secs');
-  
+
   elDelayHrs = document.getElementById('delay-hrs');
   elDelayMins = document.getElementById('delay-mins');
   elDelaySecs = document.getElementById('delay-secs');
-  
+
   elIntHrs = document.getElementById('int-hrs');
   elIntMins = document.getElementById('int-mins');
   elIntSecs = document.getElementById('int-secs');
-  
+
   elStartBtn = document.getElementById('start-btn');
   elPauseBtn = document.getElementById('pause-btn');
   elResetBtn = document.getElementById('reset-btn');
-  
+
   elConfigScreen = document.getElementById('config-screen');
   elTimerScreen = document.getElementById('timer-screen');
-  
+
   elRemainingTimeText = document.getElementById('remaining-time-text');
   elSublabel = document.getElementById('timer-sublabel');
-  
+
   elNextSignalVal = document.getElementById('next-signal-val');
   elSignalsCountVal = document.getElementById('signals-count-val');
-  
+
   elProgressRingTotal = document.getElementById('ring-total-circle');
   elProgressRingInterval = document.getElementById('ring-interval-circle');
-  
+
   elWakeLockToggle = document.getElementById('wakelock-toggle');
   elAlertModeSelect = document.getElementById('alert-mode');
   elSoundTypeSelect = document.getElementById('sound-type');
   elVoiceNotesToggle = document.getElementById('voicenotes-toggle');
-  
+
   elEarbudStatusBadge = document.getElementById('badge-earbuds');
   elWakeLockBadge = document.getElementById('badge-wakelock');
   elNotificationsBadge = document.getElementById('badge-notifications');
-  
+
   elLogsList = document.getElementById('logs-list');
   elClearLogsBtn = document.getElementById('clear-logs-btn');
-  
+
   elMicBtn = document.getElementById('mic-btn');
   elVoiceStatusText = document.getElementById('voice-status-text');
   elManualNoteInput = document.getElementById('manual-note-input');
@@ -167,7 +167,7 @@ function initDOMElements() {
 
   elInstallBanner = document.getElementById('install-banner');
   elInstallBtn = document.getElementById('install-btn');
-  
+
   elPreIntervalsContainer = document.getElementById('pre-intervals-container');
   elPrevIntervalBtn = document.getElementById('prev-interval-btn');
   elNextIntervalBtn = document.getElementById('next-interval-btn');
@@ -185,7 +185,7 @@ const presets = [
 function setupPresets() {
   const presetContainer = document.querySelector('.preset-list');
   presetContainer.innerHTML = '';
-  
+
   presets.forEach((preset, index) => {
     const chip = document.createElement('button');
     chip.className = `preset-chip ${index === 0 ? 'active' : ''}`;
@@ -197,7 +197,7 @@ function setupPresets() {
     });
     presetContainer.appendChild(chip);
   });
-  
+
   // Load default preset initially
   loadPreset(presets[0]);
 }
@@ -210,7 +210,7 @@ function loadPreset(preset) {
   elTotalHrs.value = String(th).padStart(2, '0');
   elTotalMins.value = String(tm).padStart(2, '0');
   elTotalSecs.value = String(ts).padStart(2, '0');
-  
+
   // Delay Time
   const dh = Math.floor(preset.delay / 3600);
   const dm = Math.floor((preset.delay % 3600) / 60);
@@ -218,7 +218,7 @@ function loadPreset(preset) {
   elDelayHrs.value = String(dh).padStart(2, '0');
   elDelayMins.value = String(dm).padStart(2, '0');
   elDelaySecs.value = String(ds).padStart(2, '0');
-  
+
   // Interval Time
   const ih = Math.floor(preset.interval / 3600);
   const im = Math.floor((preset.interval % 3600) / 60);
@@ -226,24 +226,24 @@ function loadPreset(preset) {
   elIntHrs.value = String(ih).padStart(2, '0');
   elIntMins.value = String(im).padStart(2, '0');
   elIntSecs.value = String(is).padStart(2, '0');
-  
+
   updateIntervalInputs();
 }
 
 // Time calculation helper
 function getInputsInSeconds() {
   const total = (parseInt(elTotalHrs.value) || 0) * 3600 +
-                (parseInt(elTotalMins.value) || 0) * 60 +
-                (parseInt(elTotalSecs.value) || 0);
-                
+    (parseInt(elTotalMins.value) || 0) * 60 +
+    (parseInt(elTotalSecs.value) || 0);
+
   const delay = (parseInt(elDelayHrs.value) || 0) * 3600 +
-                (parseInt(elDelayMins.value) || 0) * 60 +
-                (parseInt(elDelaySecs.value) || 0);
-                
+    (parseInt(elDelayMins.value) || 0) * 60 +
+    (parseInt(elDelaySecs.value) || 0);
+
   const interval = (parseInt(elIntHrs.value) || 0) * 3600 +
-                   (parseInt(elIntMins.value) || 0) * 60 +
-                   (parseInt(elIntSecs.value) || 0);
-                   
+    (parseInt(elIntMins.value) || 0) * 60 +
+    (parseInt(elIntSecs.value) || 0);
+
   return { total, delay, interval };
 }
 
@@ -258,7 +258,7 @@ function setupEventListeners() {
     }
     e.target.value = String(val).padStart(2, '0');
   };
-  
+
   document.querySelectorAll('.time-field').forEach(input => {
     input.addEventListener('blur', (e) => {
       padInput(e);
@@ -370,20 +370,20 @@ async function checkMediaDevices() {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
     let headphoneFound = false;
-    
+
     // Look at audio output devices
     devices.forEach(device => {
       if (device.kind === 'audiooutput') {
         const label = device.label.toLowerCase();
         // Since label is blank unless mic permission is granted, we also rely on deviceIds shifting,
         // but if permission is granted we can parse labels.
-        if (label.includes('headphone') || 
-            label.includes('earbud') || 
-            label.includes('bluetooth') || 
-            label.includes('pods') || 
-            label.includes('hands-free') || 
-            label.includes('hfp') || 
-            label.includes('a2dp')) {
+        if (label.includes('headphone') ||
+          label.includes('earbud') ||
+          label.includes('bluetooth') ||
+          label.includes('pods') ||
+          label.includes('hands-free') ||
+          label.includes('hfp') ||
+          label.includes('a2dp')) {
           headphoneFound = true;
         }
       }
@@ -437,8 +437,8 @@ function initAudio() {
 function playSignalTone() {
   initAudio();
   const now = audioCtx.currentTime;
-  
-  switch(soundType) {
+
+  switch (soundType) {
     case 'beep':
       playOscillator(880, 0.25, 'sine');
       break;
@@ -452,22 +452,22 @@ function playSignalTone() {
       const osc2 = audioCtx.createOscillator();
       const gain1 = audioCtx.createGain();
       const gain2 = audioCtx.createGain();
-      
+
       osc1.type = 'sine';
       osc1.frequency.setValueAtTime(987.77, now); // B5
       gain1.gain.setValueAtTime(0.25, now);
       gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
-      
+
       osc2.type = 'sine';
       osc2.frequency.setValueAtTime(493.88, now); // B4
       gain2.gain.setValueAtTime(0.12, now);
       gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
-      
+
       osc1.connect(gain1);
       gain1.connect(audioCtx.destination);
       osc2.connect(gain2);
       gain2.connect(audioCtx.destination);
-      
+
       osc1.start(now);
       osc2.start(now);
       osc1.stop(now + 1.2);
@@ -482,10 +482,10 @@ function playSignalTone() {
       wOsc.frequency.exponentialRampToValueAtTime(400, now + 0.08);
       wGain.gain.setValueAtTime(0.4, now);
       wGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-      
+
       wOsc.connect(wGain);
       wGain.connect(audioCtx.destination);
-      
+
       wOsc.start(now);
       wOsc.stop(now + 0.08);
       break;
@@ -502,15 +502,15 @@ function playOscillator(freq, duration, type = 'sine') {
   initAudio();
   const osc = audioCtx.createOscillator();
   const gainNode = audioCtx.createGain();
-  
+
   osc.type = type;
   osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
   gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
   gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-  
+
   osc.connect(gainNode);
   gainNode.connect(audioCtx.destination);
-  
+
   osc.start();
   osc.stop(audioCtx.currentTime + duration);
 }
@@ -571,7 +571,7 @@ function handleVisibilityChange() {
     if (wakeLock !== null) {
       requestWakeLock();
     }
-    
+
     // Play back any speech note missed while in the background
     if (pendingSpeechText) {
       const textToSpeak = pendingSpeechText;
@@ -613,7 +613,7 @@ function initSpeechRecognition() {
 
   recognition.onresult = (event) => {
     const transcript = event.results[0][0].transcript;
-    
+
     if (activeConfigMicIndex !== null) {
       // Find the specific setup text input and write the transcript
       const inputs = elPreIntervalsContainer.querySelectorAll('.interval-text-input');
@@ -675,23 +675,23 @@ function stopVoiceListening() {
   }
   try {
     recognition.stop();
-  } catch (err) {}
+  } catch (err) { }
 }
 
 let activeTTSAudios = [];
 
 function speakOut(text) {
   if (!voiceNotesEnabled) return;
-  
+
   const lang = (navigator.language || 'en').split('-')[0];
   const encodedText = encodeURIComponent(text);
   const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodedText}`;
-  
+
   if (keepAliveAudio && !isPaused) {
     // Actively running in background: reuse the keep-alive audio element to bypass autoplay restrictions
     keepAliveAudio.loop = false;
     keepAliveAudio.src = ttsUrl;
-    
+
     const restoreSilent = () => {
       // Re-initialize dynamic 5s silence and loop
       keepAliveAudio.src = createSilentAudioURL(5);
@@ -700,14 +700,14 @@ function speakOut(text) {
       keepAliveAudio.onended = null;
       keepAliveAudio.onerror = null;
     };
-    
+
     keepAliveAudio.onended = restoreSilent;
     keepAliveAudio.onerror = (e) => {
       console.warn("TTS playback error on keepalive audio, restoring silence", e);
       restoreSilent();
       playSpeechNative(text);
     };
-    
+
     keepAliveAudio.play().then(() => {
       console.log("Playing background speech via keep-alive audio element.");
     }).catch(err => {
@@ -731,7 +731,7 @@ function speakOut(text) {
 
 function playSpeechNative(text) {
   if (!('speechSynthesis' in window)) return;
-  
+
   // If the app is in the background, native speech synthesis will be blocked by the mobile OS.
   // We queue the note to be read aloud the moment the user brings the app back to focus.
   if (document.visibilityState === 'hidden') {
@@ -739,10 +739,10 @@ function playSpeechNative(text) {
     console.log("Speech queued for foreground:", text);
     return;
   }
-  
+
   window.speechSynthesis.cancel(); // Stop any currently speaking speech
   const utterance = new SpeechSynthesisUtterance(text);
-  
+
   // Tweak speech settings for a clear instruction tone
   utterance.rate = 1.0;
   utterance.pitch = 1.0;
@@ -773,33 +773,33 @@ function startTimer() {
   secondsElapsed = 0;
   lastIntervalFiredSeconds = null;
   isPaused = false;
-  
+
   // Transition screens
   elConfigScreen.style.display = 'none';
   elTimerScreen.style.display = 'flex';
-  
+
   // Initialize displays
   updateTimerUI();
-  
+
   // Wake lock
   requestWakeLock();
-  
+
   // Initialize sound context and keep-alive background audio
   initAudio();
   startKeepAliveAudio();
-  
+
   // Start ticks (high-precision background setInterval loop)
   let lastTime = Date.now();
   timerInterval = setInterval(() => {
     if (isPaused) return;
-    
+
     const currentTime = Date.now();
     const delta = currentTime - lastTime;
     if (delta >= 1000) {
       const ticks = Math.floor(delta / 1000);
       lastTime += ticks * 1000;
-      
-      for(let i = 0; i < ticks; i++) {
+
+      for (let i = 0; i < ticks; i++) {
         if (secondsRemaining > 0) {
           secondsRemaining--;
           secondsElapsed++;
@@ -814,9 +814,9 @@ function startTimer() {
   }, 250);
 
   appendLog("Timer started", `Total: ${formatTime(totalSeconds)} | Delay: ${formatTime(delaySeconds)} | Interval: ${formatTime(intervalSeconds)}`);
-  
-  if (voiceNotesEnabled) {
-    speakOut("Timer started. Waiting before intervals.");
+
+  if (voiceNotesEnabled && preConfiguredNotes.some(n => n && n.trim() !== "")) {
+    speakOut("Timer started.");
   }
 }
 
@@ -824,7 +824,7 @@ function checkIntervals() {
   // Interval trigger conditions:
   // 1. Elapsed time must be equal to or greater than start delay
   // 2. We trigger exactly at startDelay (first interval boundary) and every intervalSeconds thereafter.
-  
+
   if (secondsElapsed >= delaySeconds) {
     if (lastIntervalFiredSeconds === null) {
       // First fire exactly at delay threshold
@@ -838,30 +838,26 @@ function checkIntervals() {
 
 function fireIntervalAlert() {
   lastIntervalFiredSeconds = secondsElapsed;
-  
+
   // Play alarms
   playSignalTone();
   triggerVibration();
   triggerScreenFlash();
-  
+
   const signalsCount = getSignalsCount();
   const label = `Signal #${signalsCount}`;
-  
+
   // Retrieve the pre-configured note for this signal
   const note = preConfiguredNotes[signalsCount - 1] || "";
   const details = note.trim() !== "" ? note : `${formatTime(secondsRemaining)} remaining`;
   appendLog(label, details);
-  
+
   // Show system notification banner
   showLocalNotification(`Signal #${signalsCount} Reached`, details);
-  
-  // Speak out voice prompts if enabled (read pre-configured note or standard alert)
-  if (voiceNotesEnabled) {
-    if (note.trim() !== "") {
-      speakOut(`Signal ${signalsCount}: ${note}`);
-    } else {
-      speakOut(`Signal ${signalsCount} reached.`);
-    }
+
+  // Speak out voice prompts if enabled (read pre-configured note directly, silent if empty)
+  if (voiceNotesEnabled && note.trim() !== "") {
+    speakOut(note);
   }
 }
 
@@ -874,7 +870,7 @@ function togglePause() {
     requestWakeLock();
     initAudio();
     startKeepAliveAudio();
-    
+
     let lastTime = Date.now();
     timerInterval = setInterval(() => {
       if (isPaused) return;
@@ -883,7 +879,7 @@ function togglePause() {
       if (delta >= 1000) {
         const ticks = Math.floor(delta / 1000);
         lastTime += ticks * 1000;
-        for(let i = 0; i < ticks; i++) {
+        for (let i = 0; i < ticks; i++) {
           if (secondsRemaining > 0) {
             secondsRemaining--;
             secondsElapsed++;
@@ -896,7 +892,7 @@ function togglePause() {
         updateTimerUI();
       }
     }, 250);
-    
+
     appendLog("Timer resumed", "");
   } else {
     // Pause
@@ -917,17 +913,17 @@ function resetTimer() {
   releaseWakeLock();
   stopVoiceListening();
   stopKeepAliveAudio();
-  
+
   secondsRemaining = totalSeconds;
   secondsElapsed = 0;
   lastIntervalFiredSeconds = null;
-  
+
   elPauseBtn.textContent = "Pause";
   elPauseBtn.classList.remove('active-pause');
-  
+
   elConfigScreen.style.display = 'block';
   elTimerScreen.style.display = 'none';
-  
+
   appendLog("Timer reset", "");
 }
 
@@ -937,7 +933,7 @@ function finishTimer() {
   releaseWakeLock();
   stopVoiceListening();
   stopKeepAliveAudio();
-  
+
   // Grand final tone
   playOscillator(523.25, 0.15, 'sine'); // C5
   setTimeout(() => playOscillator(659.25, 0.15, 'sine'), 150); // E5
@@ -945,13 +941,13 @@ function finishTimer() {
   setTimeout(() => playOscillator(1046.50, 0.4, 'sine'), 450); // C6
   triggerVibration();
   triggerScreenFlash();
-  
+
   elRemainingTimeText.textContent = "00:00:00";
   elSublabel.textContent = "Session Completed!";
-  
+
   appendLog("Timer Finished", "All intervals completed.");
   showLocalNotification("Session Completed", "Habituation timer session finished successfully.");
-  
+
   if (voiceNotesEnabled) {
     speakOut("Timer completed. Great job.");
   }
@@ -961,7 +957,7 @@ function finishTimer() {
 function updateTimerUI() {
   // Update Time remaining text
   elRemainingTimeText.textContent = formatTime(secondsRemaining);
-  
+
   // Update sub-label message
   if (secondsElapsed < delaySeconds) {
     const diff = delaySeconds - secondsElapsed;
@@ -971,7 +967,7 @@ function updateTimerUI() {
     elSublabel.textContent = `Intervals Active`;
     elSublabel.style.color = 'var(--color-emerald)';
   }
-  
+
   // Next signal countdown
   if (secondsElapsed < delaySeconds) {
     const nextSig = delaySeconds - secondsElapsed;
@@ -981,10 +977,10 @@ function updateTimerUI() {
     // If nextSig is exactly intervalSeconds, it means we just fired or it's ticking down.
     elNextSignalVal.textContent = formatTime(nextSig === 0 ? intervalSeconds : nextSig);
   }
-  
+
   // Total signals triggered
   elSignalsCountVal.textContent = getSignalsCount();
-  
+
   // Circular rings dash offsets
   // Total Ring calculations
   const totalCircumference = 2 * Math.PI * 36; // r=36
@@ -992,7 +988,7 @@ function updateTimerUI() {
   const totalOffset = totalCircumference - (totalProgress * totalCircumference);
   elProgressRingTotal.style.strokeDasharray = `${totalCircumference} ${totalCircumference}`;
   elProgressRingTotal.style.strokeDashoffset = totalOffset;
-  
+
   // Interval Ring calculations
   const intervalCircumference = 2 * Math.PI * 32; // r=32
   let intervalProgress = 0;
@@ -1017,7 +1013,7 @@ function formatTime(secs) {
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
   const s = secs % 60;
-  
+
   return [
     String(h).padStart(2, '0'),
     String(m).padStart(2, '0'),
@@ -1029,11 +1025,11 @@ function formatTime(secs) {
 function appendLog(label, text) {
   const now = new Date();
   const timeStr = now.toTimeString().split(' ')[0];
-  
+
   // Remove empty label
   const empty = elLogsList.querySelector('.logs-empty');
   if (empty) empty.remove();
-  
+
   const logItem = document.createElement('div');
   logItem.className = 'log-item';
   logItem.innerHTML = `
@@ -1043,7 +1039,7 @@ function appendLog(label, text) {
     </div>
     <div class="log-text">${text}</div>
   `;
-  
+
   // Prepend to show latest at top
   elLogsList.insertBefore(logItem, elLogsList.firstChild);
 }
@@ -1116,7 +1112,7 @@ function updateNotificationBadge() {
     elNotificationsBadge.style.display = 'none';
     return;
   }
-  
+
   if (Notification.permission === 'granted') {
     elNotificationsBadge.textContent = "🔔 Notifications Active";
     elNotificationsBadge.className = "badge active";
@@ -1160,7 +1156,7 @@ function startKeepAliveAudio() {
     keepAliveAudio.src = createSilentAudioURL(5); // 5-second silence WAV
     keepAliveAudio.loop = true;
   }
-  
+
   keepAliveAudio.play().then(() => {
     console.log("Keep-alive audio started.");
     if ('mediaSession' in navigator) {
@@ -1184,13 +1180,13 @@ function createSilentAudioURL(durationSeconds = 5) {
   const numSamples = sampleRate * durationSeconds;
   const buffer = new ArrayBuffer(44 + numSamples * 2);
   const view = new DataView(buffer);
-  
+
   function writeString(view, offset, string) {
     for (let i = 0; i < string.length; i++) {
       view.setUint8(offset + i, string.charCodeAt(i));
     }
   }
-  
+
   writeString(view, 0, 'RIFF');
   view.setUint32(4, 36 + numSamples * 2, true);
   writeString(view, 8, 'WAVE');
@@ -1204,11 +1200,11 @@ function createSilentAudioURL(durationSeconds = 5) {
   view.setUint16(34, 16, true);
   writeString(view, 36, 'data');
   view.setUint32(40, numSamples * 2, true);
-  
+
   for (let i = 0; i < numSamples; i++) {
     view.setInt16(44 + i * 2, 0, true);
   }
-  
+
   const blob = new Blob([buffer], { type: 'audio/wav' });
   return URL.createObjectURL(blob);
 }
@@ -1227,10 +1223,10 @@ function submitManualNote() {
   if (!elManualNoteInput) return;
   const text = elManualNoteInput.value.trim();
   if (!text) return;
-  
+
   elManualNoteInput.value = '';
   elManualNoteInput.blur();
-  
+
   const lower = text.toLowerCase();
   if (lower === 'pause') {
     if (!isPaused) {
@@ -1257,46 +1253,46 @@ function updateIntervalInputs() {
   const total = inputs.total;
   const delay = inputs.delay;
   const interval = inputs.interval;
-  
+
   if (!elPreIntervalsContainer) return;
-  
+
   if (total <= 0 || interval <= 0 || delay > total) {
     elPreIntervalsContainer.innerHTML = '<div style="font-size: 0.85rem; color: var(--text-secondary); font-style: italic; text-align: center; padding: 1rem 0;">Adjust settings above to configure interval notes.</div>';
     return;
   }
-  
+
   const numIntervals = Math.floor((total - delay) / interval) + 1;
-  
+
   // Save current values to restore them
   const currentValues = [];
   elPreIntervalsContainer.querySelectorAll('.interval-text-input').forEach((input) => {
     const idx = parseInt(input.getAttribute('data-index'));
     currentValues[idx] = input.value;
   });
-  
+
   elPreIntervalsContainer.innerHTML = '';
-  
+
   if (numIntervals <= 0) {
     elPreIntervalsContainer.innerHTML = '<div style="font-size: 0.85rem; color: var(--text-secondary); font-style: italic; text-align: center; padding: 1rem 0;">No intervals calculated. Check your settings.</div>';
     return;
   }
-  
+
   const title = document.createElement('div');
   title.className = 'config-section-title';
   title.textContent = `Pre-Interval Notes (${numIntervals} Signals)`;
   elPreIntervalsContainer.appendChild(title);
-  
+
   const scrollBox = document.createElement('div');
   scrollBox.className = 'intervals-scroll-box';
-  
+
   for (let i = 0; i < numIntervals; i++) {
     const timeOffset = delay + i * interval;
     const timeStr = formatTime(timeOffset);
-    
+
     const row = document.createElement('div');
     row.className = 'interval-input-item';
     row.innerHTML = `
-      <span class="interval-time-label">Signal #${i+1} (${timeStr} elapsed)</span>
+      <span class="interval-time-label">Signal #${i + 1} (${timeStr} elapsed)</span>
       <div class="interval-input-row">
         <input type="text" class="interval-text-input" placeholder="Read aloud and log at signal..." data-index="${i}">
         <button type="button" class="interval-mic-btn" aria-label="Record voice note" data-index="${i}">
@@ -1308,18 +1304,18 @@ function updateIntervalInputs() {
         </button>
       </div>
     `;
-    
+
     // Restore value
     const input = row.querySelector('.interval-text-input');
     if (currentValues[i] !== undefined) {
       input.value = currentValues[i];
     }
-    
+
     scrollBox.appendChild(row);
   }
-  
+
   elPreIntervalsContainer.appendChild(scrollBox);
-  
+
   // Wire dynamic button listeners
   scrollBox.querySelectorAll('.interval-mic-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1334,9 +1330,9 @@ function startConfigurationMic(index, buttonElement) {
     alert("Speech recognition is not supported in this browser.");
     return;
   }
-  
+
   initAudio();
-  
+
   if (isListening) {
     if (activeConfigMicIndex === index) {
       stopConfigurationMic();
@@ -1344,11 +1340,11 @@ function startConfigurationMic(index, buttonElement) {
     }
     stopConfigurationMic();
   }
-  
+
   activeConfigMicIndex = index;
   activeConfigMicBtn = buttonElement;
   activeConfigMicBtn.classList.add('recording');
-  
+
   try {
     recognition.start();
   } catch (err) {
@@ -1365,7 +1361,7 @@ function stopConfigurationMic() {
   isListening = false;
   try {
     recognition.stop();
-  } catch (err) {}
+  } catch (err) { }
 }
 
 function getPreConfiguredNotes() {
@@ -1386,9 +1382,9 @@ function jumpToNextInterval() {
   const total = inputs.total;
   const delay = inputs.delay;
   const interval = inputs.interval;
-  
+
   if (secondsElapsed >= total) return;
-  
+
   let targetElapsed;
   if (secondsElapsed < delay) {
     targetElapsed = delay;
@@ -1396,15 +1392,15 @@ function jumpToNextInterval() {
     const k = Math.floor((secondsElapsed - delay) / interval);
     targetElapsed = delay + (k + 1) * interval;
   }
-  
+
   if (targetElapsed > total) {
     targetElapsed = total;
   }
-  
+
   const diff = targetElapsed - secondsElapsed;
   secondsRemaining -= diff;
   secondsElapsed = targetElapsed;
-  
+
   appendLog("Command: Skip Forward", `Jumped to ${formatTime(secondsElapsed)} elapsed`);
   checkIntervals();
   updateTimerUI();
@@ -1414,9 +1410,9 @@ function jumpToPreviousInterval() {
   const inputs = getInputsInSeconds();
   const delay = inputs.delay;
   const interval = inputs.interval;
-  
+
   if (secondsElapsed <= 0) return;
-  
+
   let targetElapsed;
   if (secondsElapsed <= delay) {
     targetElapsed = 0;
@@ -1424,27 +1420,27 @@ function jumpToPreviousInterval() {
     const elapsedSinceDelay = secondsElapsed - delay;
     const k = Math.floor(elapsedSinceDelay / interval);
     const remainder = elapsedSinceDelay % interval;
-    
+
     if (remainder === 0) {
       targetElapsed = delay + (k - 1) * interval;
     } else {
       targetElapsed = delay + k * interval;
     }
   }
-  
+
   if (targetElapsed < 0) targetElapsed = 0;
-  
+
   const diff = secondsElapsed - targetElapsed;
   secondsRemaining += diff;
   secondsElapsed = targetElapsed;
-  
+
   // Set lastIntervalFiredSeconds back so it can trigger again when reaching the boundary
   if (secondsElapsed < delay) {
     lastIntervalFiredSeconds = null;
   } else {
     lastIntervalFiredSeconds = secondsElapsed - interval;
   }
-  
+
   appendLog("Command: Jump Back", `Jumping back to ${formatTime(secondsElapsed)} elapsed`);
   updateTimerUI();
 }
