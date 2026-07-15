@@ -894,3 +894,149 @@ input:checked + .slider:before {
   height: 18px;
 }
 
+/* Pre-Intervals Notes Setup Screen styling */
+.pre-intervals-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 20px;
+  padding: 1.25rem;
+  margin-top: 0.25rem;
+}
+
+.intervals-scroll-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+/* Custom scrollbar for intervals scroll box */
+.intervals-scroll-box::-webkit-scrollbar {
+  width: 4px;
+}
+.intervals-scroll-box::-webkit-scrollbar-track {
+  background: transparent;
+}
+.intervals-scroll-box::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.interval-input-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.interval-time-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.interval-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.interval-text-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.5rem 0.75rem;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 0.85rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.interval-text-input:focus {
+  border-color: var(--color-violet);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.interval-mic-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.interval-mic-btn:hover {
+  border-color: var(--color-rose);
+  color: var(--color-rose);
+  background: rgba(244, 63, 94, 0.05);
+}
+
+.interval-mic-btn.recording {
+  background: rgba(244, 63, 94, 0.15);
+  border-color: var(--color-rose);
+  color: var(--color-rose);
+  box-shadow: 0 0 10px var(--color-rose-glow);
+  animation: pulse-mic 1.5s infinite;
+}
+
+.interval-mic-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Active Timer Interval Navigation Buttons styling */
+.navigation-row {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.btn-nav {
+  flex: 1;
+  background: rgba(6, 182, 212, 0.08);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  color: #cffafe;
+  padding: 0.8rem;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  outline: none;
+}
+
+.btn-nav:hover {
+  background: rgba(6, 182, 212, 0.15);
+  border-color: var(--color-cyan);
+}
+
+.btn-nav:active {
+  transform: scale(0.97);
+  background: rgba(6, 182, 212, 0.25);
+}
+
+.btn-nav svg {
+  width: 16px;
+  height: 16px;
+}
+
+

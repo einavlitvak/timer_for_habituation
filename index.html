@@ -110,6 +110,11 @@
           </div>
         </div>
 
+        <!-- Dynamic Interval Notes Setup -->
+        <div id="pre-intervals-container" class="pre-intervals-container">
+          <!-- Populated dynamically by app.js -->
+        </div>
+
         <!-- Section 3: Preferences & Alerts -->
         <div>
           <div class="config-section-title">3. Preferences</div>
@@ -236,6 +241,24 @@
               </svg>
             </button>
           </div>
+        </div>
+
+        <!-- Interval Navigation Buttons -->
+        <div class="navigation-row">
+          <button id="prev-interval-btn" class="btn-nav" aria-label="Previous interval">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="19 20 9 12 19 4 19 20"></polygon>
+              <line x1="5" y1="19" x2="5" y2="5"></line>
+            </svg>
+            Prev Interval
+          </button>
+          <button id="next-interval-btn" class="btn-nav" aria-label="Next interval">
+            Next Interval
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 4 15 12 5 20 5 4"></polygon>
+              <line x1="19" y1="5" x2="19" y2="19"></line>
+            </svg>
+          </button>
         </div>
 
         <!-- Timer Control Buttons -->

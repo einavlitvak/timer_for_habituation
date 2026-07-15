@@ -1,5 +1,5 @@
 // PWA Update / Cache-Busting Mechanism
-const APP_VERSION = '3';
+const APP_VERSION = '5';
 if (localStorage.getItem('app_version') !== APP_VERSION) {
   localStorage.setItem('app_version', APP_VERSION);
   if ('serviceWorker' in navigator) {
@@ -51,6 +51,11 @@ let isListening = false;
 let autoListenActive = false;
 let earbudsDetected = false;
 
+// Config Dynamic Notes State
+let activeConfigMicIndex = null;
+let activeConfigMicBtn = null;
+let preConfiguredNotes = [];
+
 let deferredPrompt = null;
 
 // Initialize App
@@ -62,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSpeechRecognition();
   registerServiceWorker();
   initNotificationPermission();
+  updateIntervalInputs(); // Populate dynamic interval inputs for default preset
 });
 
 // Register Service Worker for PWA
@@ -90,6 +96,8 @@ let elMicBtn, elVoiceStatusText;
 let elManualNoteInput, elSendNoteBtn;
 let elTestSoundBtn;
 let elInstallBanner, elInstallBtn;
+let elPreIntervalsContainer;
+let elPrevIntervalBtn, elNextIntervalBtn;
 
 function initDOMElements() {
   elTotalHrs = document.getElementById('total-hrs');
@@ -140,6 +148,10 @@ function initDOMElements() {
 
   elInstallBanner = document.getElementById('install-banner');
   elInstallBtn = document.getElementById('install-btn');
+  
+  elPreIntervalsContainer = document.getElementById('pre-intervals-container');
+  elPrevIntervalBtn = document.getElementById('prev-interval-btn');
+  elNextIntervalBtn = document.getElementById('next-interval-btn');
 }
 
 // Preset configurations
@@ -194,6 +206,8 @@ function loadPreset(preset) {
   elIntHrs.value = String(ih).padStart(2, '0');
   elIntMins.value = String(im).padStart(2, '0');
   elIntSecs.value = String(is).padStart(2, '0');
+  
+  updateIntervalInputs();
 }
 
 // Time calculation helper
@@ -226,7 +240,11 @@ function setupEventListeners() {
   };
   
   document.querySelectorAll('.time-field').forEach(input => {
-    input.addEventListener('blur', padInput);
+    input.addEventListener('blur', (e) => {
+      padInput(e);
+      updateIntervalInputs();
+    });
+    input.addEventListener('input', updateIntervalInputs);
     input.addEventListener('focus', e => e.target.select());
   });
 
@@ -262,6 +280,14 @@ function setupEventListeners() {
   elResetBtn.addEventListener('click', resetTimer);
   elTestSoundBtn.addEventListener('click', testSound);
   elClearLogsBtn.addEventListener('click', clearLogs);
+
+  // Interval Navigation Controls
+  if (elPrevIntervalBtn) {
+    elPrevIntervalBtn.addEventListener('click', jumpToPreviousInterval);
+  }
+  if (elNextIntervalBtn) {
+    elNextIntervalBtn.addEventListener('click', jumpToNextInterval);
+  }
 
   // Manual Mic Trigger
   elMicBtn.addEventListener('click', () => {
@@ -540,33 +566,57 @@ function initSpeechRecognition() {
 
   recognition.onstart = () => {
     isListening = true;
-    elMicBtn.classList.add('listening');
-    elVoiceStatusText.textContent = "Listening for voice note...";
+    if (activeConfigMicIndex !== null) {
+      if (activeConfigMicBtn) {
+        activeConfigMicBtn.classList.add('recording');
+      }
+    } else {
+      elMicBtn.classList.add('listening');
+      elVoiceStatusText.textContent = "Listening for voice note...";
+    }
   };
 
   recognition.onresult = (event) => {
     const transcript = event.results[0][0].transcript;
-    elVoiceStatusText.textContent = `Captured: "${transcript}"`;
-    speakOut(`Note saved.`);
     
-    // Log the voice note
-    appendVoiceNoteToLog(transcript);
+    if (activeConfigMicIndex !== null) {
+      // Find the specific setup text input and write the transcript
+      const inputs = elPreIntervalsContainer.querySelectorAll('.interval-text-input');
+      const targetInput = Array.from(inputs).find(input => parseInt(input.getAttribute('data-index')) === activeConfigMicIndex);
+      if (targetInput) {
+        targetInput.value = transcript;
+        speakOut(`Saved.`);
+      }
+      stopConfigurationMic();
+    } else {
+      elVoiceStatusText.textContent = `Captured: "${transcript}"`;
+      speakOut(`Note saved.`);
+      appendVoiceNoteToLog(transcript);
+    }
   };
 
   recognition.onerror = (event) => {
     console.error("Speech recognition error:", event.error);
-    if (event.error === 'no-speech') {
-      elVoiceStatusText.textContent = "No speech detected.";
+    if (activeConfigMicIndex !== null) {
+      stopConfigurationMic();
     } else {
-      elVoiceStatusText.textContent = `Voice Error: ${event.error}`;
+      if (event.error === 'no-speech') {
+        elVoiceStatusText.textContent = "No speech detected.";
+      } else {
+        elVoiceStatusText.textContent = `Voice Error: ${event.error}`;
+      }
+      stopVoiceListening();
     }
-    stopVoiceListening();
   };
 
   recognition.onend = () => {
-    stopVoiceListening();
-    if (autoListenActive) {
-      autoListenActive = false;
+    if (activeConfigMicIndex !== null) {
+      stopConfigurationMic();
+    } else {
+      stopVoiceListening();
+      if (autoListenActive) {
+        autoListenActive = false;
+      }
     }
   };
 }
@@ -621,6 +671,9 @@ function startTimer() {
     return;
   }
 
+  // Gather pre-configured notes
+  preConfiguredNotes = getPreConfiguredNotes();
+
   // Setup state
   secondsRemaining = totalSeconds;
   secondsElapsed = 0;
@@ -641,16 +694,16 @@ function startTimer() {
   initAudio();
   startKeepAliveAudio();
   
-  // Start ticks
-  let lastTime = performance.now();
-  timerInterval = requestAnimationFrame(function tick(currentTime) {
+  // Start ticks (high-precision background setInterval loop)
+  let lastTime = Date.now();
+  timerInterval = setInterval(() => {
     if (isPaused) return;
     
+    const currentTime = Date.now();
     const delta = currentTime - lastTime;
     if (delta >= 1000) {
-      // Account for potential long frame delay
       const ticks = Math.floor(delta / 1000);
-      lastTime = currentTime - (delta % 1000);
+      lastTime += ticks * 1000;
       
       for(let i = 0; i < ticks; i++) {
         if (secondsRemaining > 0) {
@@ -664,11 +717,7 @@ function startTimer() {
       }
       updateTimerUI();
     }
-    
-    if (secondsRemaining > 0) {
-      timerInterval = requestAnimationFrame(tick);
-    }
-  });
+  }, 250);
 
   appendLog("Timer started", `Total: ${formatTime(totalSeconds)} | Delay: ${formatTime(delaySeconds)} | Interval: ${formatTime(intervalSeconds)}`);
   
@@ -703,21 +752,22 @@ function fireIntervalAlert() {
   
   const signalsCount = getSignalsCount();
   const label = `Signal #${signalsCount}`;
-  const details = `${formatTime(secondsRemaining)} remaining`;
+  
+  // Retrieve the pre-configured note for this signal
+  const note = preConfiguredNotes[signalsCount - 1] || "";
+  const details = note.trim() !== "" ? note : `${formatTime(secondsRemaining)} remaining`;
   appendLog(label, details);
   
   // Show system notification banner
   showLocalNotification(`Signal #${signalsCount} Reached`, details);
   
-  // Speak out voice prompts if enabled
+  // Speak out voice prompts if enabled (read pre-configured note or standard alert)
   if (voiceNotesEnabled) {
-    speakOut(`Interval reached. Record note.`);
-    // Automatically trigger voice recognition after voice instruction completes (approx 1.5s delay)
-    setTimeout(() => {
-      if (!isPaused && voiceNotesEnabled) {
-        startVoiceListening(true);
-      }
-    }, 1500);
+    if (note.trim() !== "") {
+      speakOut(`Signal ${signalsCount}: ${note}`);
+    } else {
+      speakOut(`Signal ${signalsCount} reached.`);
+    }
   }
 }
 
@@ -731,13 +781,14 @@ function togglePause() {
     initAudio();
     startKeepAliveAudio();
     
-    let lastTime = performance.now();
-    timerInterval = requestAnimationFrame(function tick(currentTime) {
+    let lastTime = Date.now();
+    timerInterval = setInterval(() => {
       if (isPaused) return;
+      const currentTime = Date.now();
       const delta = currentTime - lastTime;
       if (delta >= 1000) {
         const ticks = Math.floor(delta / 1000);
-        lastTime = currentTime - (delta % 1000);
+        lastTime += ticks * 1000;
         for(let i = 0; i < ticks; i++) {
           if (secondsRemaining > 0) {
             secondsRemaining--;
@@ -750,10 +801,7 @@ function togglePause() {
         }
         updateTimerUI();
       }
-      if (secondsRemaining > 0) {
-        timerInterval = requestAnimationFrame(tick);
-      }
-    });
+    }, 250);
     
     appendLog("Timer resumed", "");
   } else {
@@ -761,7 +809,7 @@ function togglePause() {
     isPaused = true;
     elPauseBtn.textContent = "Resume";
     elPauseBtn.classList.add('active-pause');
-    cancelAnimationFrame(timerInterval);
+    clearInterval(timerInterval);
     releaseWakeLock();
     stopVoiceListening();
     stopKeepAliveAudio();
@@ -771,7 +819,7 @@ function togglePause() {
 
 function resetTimer() {
   isPaused = true;
-  cancelAnimationFrame(timerInterval);
+  clearInterval(timerInterval);
   releaseWakeLock();
   stopVoiceListening();
   stopKeepAliveAudio();
@@ -791,7 +839,7 @@ function resetTimer() {
 
 function finishTimer() {
   isPaused = true;
-  cancelAnimationFrame(timerInterval);
+  clearInterval(timerInterval);
   releaseWakeLock();
   stopVoiceListening();
   stopKeepAliveAudio();
@@ -990,7 +1038,7 @@ function updateNotificationBadge() {
 
 function showLocalNotification(title, message) {
   if ('Notification' in window && Notification.permission === 'granted') {
-    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then(reg => {
         reg.showNotification(title, {
           body: message,
@@ -1001,6 +1049,9 @@ function showLocalNotification(title, message) {
           renotify: true,
           requireInteraction: false
         });
+      }).catch(err => {
+        console.error("SW notification dispatch error:", err);
+        new Notification(title, { body: message, icon: './icon-192.png' });
       });
     } else {
       new Notification(title, { body: message, icon: './icon-192.png' });
@@ -1012,8 +1063,7 @@ function showLocalNotification(title, message) {
 function startKeepAliveAudio() {
   if (!keepAliveAudio) {
     keepAliveAudio = new Audio();
-    // 1-second silent WAV base64
-    keepAliveAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+    keepAliveAudio.src = createSilentAudioURL(5); // 5-second silence WAV
     keepAliveAudio.loop = true;
   }
   
@@ -1031,6 +1081,42 @@ function startKeepAliveAudio() {
   }).catch(err => {
     console.warn("Could not start keep-alive audio:", err);
   });
+}
+
+// Generate silent WAV dynamic Blob URL to avoid PWA background execution throttle
+function createSilentAudioURL(durationSeconds = 5) {
+  const sampleRate = 8000;
+  const numChannels = 1;
+  const numSamples = sampleRate * durationSeconds;
+  const buffer = new ArrayBuffer(44 + numSamples * 2);
+  const view = new DataView(buffer);
+  
+  function writeString(view, offset, string) {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  }
+  
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + numSamples * 2, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, numChannels * 2, true);
+  view.setUint16(34, 16, true);
+  writeString(view, 36, 'data');
+  view.setUint32(40, numSamples * 2, true);
+  
+  for (let i = 0; i < numSamples; i++) {
+    view.setInt16(44 + i * 2, 0, true);
+  }
+  
+  const blob = new Blob([buffer], { type: 'audio/wav' });
+  return URL.createObjectURL(blob);
 }
 
 function stopKeepAliveAudio() {
@@ -1070,3 +1156,202 @@ function submitManualNote() {
     speakOut("Note saved.");
   }
 }
+
+// Dynamic Interval Input Recalculation
+function updateIntervalInputs() {
+  const inputs = getInputsInSeconds();
+  const total = inputs.total;
+  const delay = inputs.delay;
+  const interval = inputs.interval;
+  
+  if (!elPreIntervalsContainer) return;
+  
+  if (total <= 0 || interval <= 0 || delay > total) {
+    elPreIntervalsContainer.innerHTML = '<div style="font-size: 0.85rem; color: var(--text-secondary); font-style: italic; text-align: center; padding: 1rem 0;">Adjust settings above to configure interval notes.</div>';
+    return;
+  }
+  
+  const numIntervals = Math.floor((total - delay) / interval) + 1;
+  
+  // Save current values to restore them
+  const currentValues = [];
+  elPreIntervalsContainer.querySelectorAll('.interval-text-input').forEach((input) => {
+    const idx = parseInt(input.getAttribute('data-index'));
+    currentValues[idx] = input.value;
+  });
+  
+  elPreIntervalsContainer.innerHTML = '';
+  
+  if (numIntervals <= 0) {
+    elPreIntervalsContainer.innerHTML = '<div style="font-size: 0.85rem; color: var(--text-secondary); font-style: italic; text-align: center; padding: 1rem 0;">No intervals calculated. Check your settings.</div>';
+    return;
+  }
+  
+  const title = document.createElement('div');
+  title.className = 'config-section-title';
+  title.textContent = `Pre-Interval Notes (${numIntervals} Signals)`;
+  elPreIntervalsContainer.appendChild(title);
+  
+  const scrollBox = document.createElement('div');
+  scrollBox.className = 'intervals-scroll-box';
+  
+  for (let i = 0; i < numIntervals; i++) {
+    const timeOffset = delay + i * interval;
+    const timeStr = formatTime(timeOffset);
+    
+    const row = document.createElement('div');
+    row.className = 'interval-input-item';
+    row.innerHTML = `
+      <span class="interval-time-label">Signal #${i+1} (${timeStr} elapsed)</span>
+      <div class="interval-input-row">
+        <input type="text" class="interval-text-input" placeholder="Read aloud and log at signal..." data-index="${i}">
+        <button type="button" class="interval-mic-btn" aria-label="Record voice note" data-index="${i}">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="22" />
+          </svg>
+        </button>
+      </div>
+    `;
+    
+    // Restore value
+    const input = row.querySelector('.interval-text-input');
+    if (currentValues[i] !== undefined) {
+      input.value = currentValues[i];
+    }
+    
+    scrollBox.appendChild(row);
+  }
+  
+  elPreIntervalsContainer.appendChild(scrollBox);
+  
+  // Wire dynamic button listeners
+  scrollBox.querySelectorAll('.interval-mic-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.getAttribute('data-index'));
+      startConfigurationMic(idx, btn);
+    });
+  });
+}
+
+function startConfigurationMic(index, buttonElement) {
+  if (!recognition) {
+    alert("Speech recognition is not supported in this browser.");
+    return;
+  }
+  
+  initAudio();
+  
+  if (isListening) {
+    if (activeConfigMicIndex === index) {
+      stopConfigurationMic();
+      return;
+    }
+    stopConfigurationMic();
+  }
+  
+  activeConfigMicIndex = index;
+  activeConfigMicBtn = buttonElement;
+  activeConfigMicBtn.classList.add('recording');
+  
+  try {
+    recognition.start();
+  } catch (err) {
+    console.error("Mic start failed", err);
+  }
+}
+
+function stopConfigurationMic() {
+  if (activeConfigMicBtn) {
+    activeConfigMicBtn.classList.remove('recording');
+  }
+  activeConfigMicIndex = null;
+  activeConfigMicBtn = null;
+  isListening = false;
+  try {
+    recognition.stop();
+  } catch (err) {}
+}
+
+function getPreConfiguredNotes() {
+  const notes = [];
+  if (elPreIntervalsContainer) {
+    const inputs = elPreIntervalsContainer.querySelectorAll('.interval-text-input');
+    inputs.forEach(input => {
+      const idx = parseInt(input.getAttribute('data-index'));
+      notes[idx] = input.value;
+    });
+  }
+  return notes;
+}
+
+// Active session interval navigation controls
+function jumpToNextInterval() {
+  const inputs = getInputsInSeconds();
+  const total = inputs.total;
+  const delay = inputs.delay;
+  const interval = inputs.interval;
+  
+  if (secondsElapsed >= total) return;
+  
+  let targetElapsed;
+  if (secondsElapsed < delay) {
+    targetElapsed = delay;
+  } else {
+    const k = Math.floor((secondsElapsed - delay) / interval);
+    targetElapsed = delay + (k + 1) * interval;
+  }
+  
+  if (targetElapsed > total) {
+    targetElapsed = total;
+  }
+  
+  const diff = targetElapsed - secondsElapsed;
+  secondsRemaining -= diff;
+  secondsElapsed = targetElapsed;
+  
+  appendLog("Command: Skip Forward", `Jumped to ${formatTime(secondsElapsed)} elapsed`);
+  checkIntervals();
+  updateTimerUI();
+}
+
+function jumpToPreviousInterval() {
+  const inputs = getInputsInSeconds();
+  const delay = inputs.delay;
+  const interval = inputs.interval;
+  
+  if (secondsElapsed <= 0) return;
+  
+  let targetElapsed;
+  if (secondsElapsed <= delay) {
+    targetElapsed = 0;
+  } else {
+    const elapsedSinceDelay = secondsElapsed - delay;
+    const k = Math.floor(elapsedSinceDelay / interval);
+    const remainder = elapsedSinceDelay % interval;
+    
+    if (remainder === 0) {
+      targetElapsed = delay + (k - 1) * interval;
+    } else {
+      targetElapsed = delay + k * interval;
+    }
+  }
+  
+  if (targetElapsed < 0) targetElapsed = 0;
+  
+  const diff = secondsElapsed - targetElapsed;
+  secondsRemaining += diff;
+  secondsElapsed = targetElapsed;
+  
+  // Set lastIntervalFiredSeconds back so it can trigger again when reaching the boundary
+  if (secondsElapsed < delay) {
+    lastIntervalFiredSeconds = null;
+  } else {
+    lastIntervalFiredSeconds = secondsElapsed - interval;
+  }
+  
+  appendLog("Command: Jump Back", `Jumping back to ${formatTime(secondsElapsed)} elapsed`);
+  updateTimerUI();
+}
+

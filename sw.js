@@ -1,9 +1,9 @@
-const CACHE_NAME = 'habituation-timer-v3';
+const CACHE_NAME = 'habituation-timer-v5';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
-  './app.js?v=3',
+  './app.js?v=5',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
