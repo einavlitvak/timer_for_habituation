@@ -43,6 +43,7 @@
       <div class="status-bar">
         <span id="badge-earbuds" class="badge">🔊 Speakers Active</span>
         <span id="badge-wakelock" class="badge">👁️ Screen Normal</span>
+        <span id="badge-notifications" class="badge">🔔 Notifications: Ask</span>
       </div>
     </header>
 
@@ -224,6 +225,17 @@
             </button>
           </div>
           <div id="voice-status-text" class="voice-status-text">Tap mic to record voice note</div>
+
+          <!-- Manual Input/Command Row -->
+          <div class="manual-input-container">
+            <input type="text" id="manual-note-input" class="manual-note-input" placeholder="Type note (or 'pause', 'resume', 'stop')...">
+            <button id="send-note-btn" class="send-note-btn" aria-label="Submit note">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <!-- Timer Control Buttons -->

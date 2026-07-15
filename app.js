@@ -1,5 +1,5 @@
 // PWA Update / Cache-Busting Mechanism
-const APP_VERSION = '2';
+const APP_VERSION = '3';
 if (localStorage.getItem('app_version') !== APP_VERSION) {
   localStorage.setItem('app_version', APP_VERSION);
   if ('serviceWorker' in navigator) {
@@ -43,6 +43,7 @@ let voiceNotesEnabled = true;
 
 // Web Audio API
 let audioCtx = null;
+let keepAliveAudio = null; // Background execution keep-alive
 
 // Speech Recognition & Synthesis
 let recognition = null;
@@ -60,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
   checkMediaDevices();
   initSpeechRecognition();
   registerServiceWorker();
+  initNotificationPermission();
 });
 
 // Register Service Worker for PWA
@@ -82,8 +84,10 @@ let elNextSignalVal, elSignalsCountVal;
 let elProgressRingTotal, elProgressRingInterval;
 let elWakeLockToggle, elAlertModeSelect, elSoundTypeSelect;
 let elVoiceNotesToggle, elEarbudStatusBadge, elWakeLockBadge;
+let elNotificationsBadge;
 let elLogsList, elClearLogsBtn;
 let elMicBtn, elVoiceStatusText;
+let elManualNoteInput, elSendNoteBtn;
 let elTestSoundBtn;
 let elInstallBanner, elInstallBtn;
 
@@ -123,12 +127,15 @@ function initDOMElements() {
   
   elEarbudStatusBadge = document.getElementById('badge-earbuds');
   elWakeLockBadge = document.getElementById('badge-wakelock');
+  elNotificationsBadge = document.getElementById('badge-notifications');
   
   elLogsList = document.getElementById('logs-list');
   elClearLogsBtn = document.getElementById('clear-logs-btn');
   
   elMicBtn = document.getElementById('mic-btn');
   elVoiceStatusText = document.getElementById('voice-status-text');
+  elManualNoteInput = document.getElementById('manual-note-input');
+  elSendNoteBtn = document.getElementById('send-note-btn');
   elTestSoundBtn = document.getElementById('test-sound-btn');
 
   elInstallBanner = document.getElementById('install-banner');
@@ -264,6 +271,23 @@ function setupEventListeners() {
       startVoiceListening(false); // Manual note dictation
     }
   });
+
+  // Manual text note/command listeners
+  if (elSendNoteBtn) {
+    elSendNoteBtn.addEventListener('click', submitManualNote);
+  }
+  if (elManualNoteInput) {
+    elManualNoteInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        submitManualNote();
+      }
+    });
+  }
+
+  // Notification badge request permission on click
+  if (elNotificationsBadge) {
+    elNotificationsBadge.addEventListener('click', requestNotificationPermission);
+  }
 
   // Listen for visibility changes to manage wake lock
   document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -613,8 +637,9 @@ function startTimer() {
   // Wake lock
   requestWakeLock();
   
-  // Initialize sound context
+  // Initialize sound context and keep-alive background audio
   initAudio();
+  startKeepAliveAudio();
   
   // Start ticks
   let lastTime = performance.now();
@@ -676,9 +701,13 @@ function fireIntervalAlert() {
   triggerVibration();
   triggerScreenFlash();
   
-  const label = `Signal #${getSignalsCount() + 1}`;
+  const signalsCount = getSignalsCount();
+  const label = `Signal #${signalsCount}`;
   const details = `${formatTime(secondsRemaining)} remaining`;
   appendLog(label, details);
+  
+  // Show system notification banner
+  showLocalNotification(`Signal #${signalsCount} Reached`, details);
   
   // Speak out voice prompts if enabled
   if (voiceNotesEnabled) {
@@ -700,6 +729,7 @@ function togglePause() {
     elPauseBtn.classList.remove('active-pause');
     requestWakeLock();
     initAudio();
+    startKeepAliveAudio();
     
     let lastTime = performance.now();
     timerInterval = requestAnimationFrame(function tick(currentTime) {
@@ -734,6 +764,7 @@ function togglePause() {
     cancelAnimationFrame(timerInterval);
     releaseWakeLock();
     stopVoiceListening();
+    stopKeepAliveAudio();
     appendLog("Timer paused", "");
   }
 }
@@ -743,6 +774,7 @@ function resetTimer() {
   cancelAnimationFrame(timerInterval);
   releaseWakeLock();
   stopVoiceListening();
+  stopKeepAliveAudio();
   
   secondsRemaining = totalSeconds;
   secondsElapsed = 0;
@@ -762,6 +794,7 @@ function finishTimer() {
   cancelAnimationFrame(timerInterval);
   releaseWakeLock();
   stopVoiceListening();
+  stopKeepAliveAudio();
   
   // Grand final tone
   playOscillator(523.25, 0.15, 'sine'); // C5
@@ -775,6 +808,7 @@ function finishTimer() {
   elSublabel.textContent = "Session Completed!";
   
   appendLog("Timer Finished", "All intervals completed.");
+  showLocalNotification("Session Completed", "Habituation timer session finished successfully.");
   
   if (voiceNotesEnabled) {
     speakOut("Timer completed. Great job.");
@@ -873,17 +907,19 @@ function appendLog(label, text) {
 }
 
 function appendVoiceNoteToLog(text) {
-  // Append voice text to the latest logged interval signal item (usually top of list)
+  appendNoteToLog(text, true);
+}
+
+function appendNoteToLog(text, isVoice = true) {
+  const prefix = isVoice ? '🎙️' : '📝';
   const firstLog = elLogsList.firstElementChild;
   if (firstLog && !firstLog.classList.contains('logs-empty')) {
-    // Append inside this log item
     const voiceNoteDiv = document.createElement('div');
     voiceNoteDiv.className = 'log-dictation';
-    voiceNoteDiv.textContent = `🎙️ "${text}"`;
+    voiceNoteDiv.textContent = `${prefix} "${text}"`;
     firstLog.appendChild(voiceNoteDiv);
   } else {
-    // If no logs, log as independent note
-    appendLog("Voice Note", `🎙️ "${text}"`);
+    appendLog(isVoice ? "Voice Note" : "Manual Note", `${prefix} "${text}"`);
   }
 }
 
@@ -906,3 +942,131 @@ window.addEventListener('appinstalled', () => {
     elInstallBanner.style.display = 'none';
   }
 });
+
+// Notifications Permission Initialization & Helpers
+function initNotificationPermission() {
+  if ('Notification' in window) {
+    updateNotificationBadge();
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().then(() => {
+        updateNotificationBadge();
+      });
+    }
+  } else {
+    if (elNotificationsBadge) elNotificationsBadge.style.display = 'none';
+  }
+}
+
+function requestNotificationPermission() {
+  if ('Notification' in window) {
+    Notification.requestPermission().then(permission => {
+      updateNotificationBadge();
+      if (permission === 'granted') {
+        showLocalNotification("Notifications Enabled", "You will now receive interval alerts in the background.");
+      }
+    });
+  }
+}
+
+function updateNotificationBadge() {
+  if (!elNotificationsBadge) return;
+  if (!('Notification' in window)) {
+    elNotificationsBadge.style.display = 'none';
+    return;
+  }
+  
+  if (Notification.permission === 'granted') {
+    elNotificationsBadge.textContent = "🔔 Notifications Active";
+    elNotificationsBadge.className = "badge active";
+  } else if (Notification.permission === 'denied') {
+    elNotificationsBadge.textContent = "🔕 Notifications Blocked";
+    elNotificationsBadge.className = "badge warning";
+  } else {
+    elNotificationsBadge.textContent = "🔔 Click for Alerts";
+    elNotificationsBadge.className = "badge info";
+    elNotificationsBadge.style.cursor = "pointer";
+  }
+}
+
+function showLocalNotification(title, message) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.showNotification(title, {
+          body: message,
+          icon: './icon-192.png',
+          badge: './icon-192.png',
+          vibrate: [150, 100, 250],
+          tag: 'habituation-timer-signal',
+          renotify: true,
+          requireInteraction: false
+        });
+      });
+    } else {
+      new Notification(title, { body: message, icon: './icon-192.png' });
+    }
+  }
+}
+
+// Background Audio Keep-Alive
+function startKeepAliveAudio() {
+  if (!keepAliveAudio) {
+    keepAliveAudio = new Audio();
+    // 1-second silent WAV base64
+    keepAliveAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+    keepAliveAudio.loop = true;
+  }
+  
+  keepAliveAudio.play().then(() => {
+    console.log("Keep-alive audio started.");
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = 'playing';
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'Habituation Timer',
+        artist: 'Session Active',
+        album: 'Timer Running in Background',
+        artwork: [{ src: './icon-192.png', sizes: '192x192', type: 'image/png' }]
+      });
+    }
+  }).catch(err => {
+    console.warn("Could not start keep-alive audio:", err);
+  });
+}
+
+function stopKeepAliveAudio() {
+  if (keepAliveAudio) {
+    keepAliveAudio.pause();
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = 'paused';
+    }
+  }
+}
+
+// Manual Text Notes / Command Handler
+function submitManualNote() {
+  if (!elManualNoteInput) return;
+  const text = elManualNoteInput.value.trim();
+  if (!text) return;
+  
+  elManualNoteInput.value = '';
+  elManualNoteInput.blur();
+  
+  const lower = text.toLowerCase();
+  if (lower === 'pause') {
+    if (!isPaused) {
+      togglePause();
+      appendLog("Command: Pause", "Triggered by manual text");
+    }
+  } else if (lower === 'resume' || lower === 'start') {
+    if (isPaused) {
+      togglePause();
+      appendLog("Command: Resume", "Triggered by manual text");
+    }
+  } else if (lower === 'reset' || lower === 'end' || lower === 'stop') {
+    resetTimer();
+    appendLog("Command: End Session", "Triggered by manual text");
+  } else {
+    appendNoteToLog(text, false);
+    speakOut("Note saved.");
+  }
+}

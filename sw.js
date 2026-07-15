@@ -1,9 +1,9 @@
-const CACHE_NAME = 'habituation-timer-v2';
+const CACHE_NAME = 'habituation-timer-v3';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
-  './app.js?v=2',
+  './app.js?v=3',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
@@ -45,6 +45,26 @@ self.addEventListener('fetch', (e) => {
         return cachedResponse;
       }
       return fetch(e.request);
+    })
+  );
+});
+
+// Focus or open application window when clicking notifications
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // If a window is already open, focus it
+      for (const client of clientList) {
+        if (client.url.includes('index.html') && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Otherwise, open a new window
+      if (self.clients.openWindow) {
+        return self.clients.openWindow('./index.html');
+      }
     })
   );
 });

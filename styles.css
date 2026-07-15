@@ -836,3 +836,61 @@ input:checked + .slider:before {
     font-size: 2.4rem;
   }
 }
+
+/* Manual Input & Command Styling */
+.manual-input-container {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.manual-note-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0.6rem 0.8rem;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.manual-note-input:focus {
+  border-color: var(--color-cyan);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.send-note-btn {
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  color: var(--color-cyan);
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.send-note-btn:hover {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: var(--color-cyan);
+}
+
+.send-note-btn:active {
+  background: rgba(6, 182, 212, 0.3);
+  transform: scale(0.92);
+}
+
+.send-note-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
