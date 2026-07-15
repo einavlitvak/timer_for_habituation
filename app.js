@@ -1,5 +1,5 @@
 // PWA Update / Cache-Busting Mechanism
-const APP_VERSION = '8';
+const APP_VERSION = '9';
 if (localStorage.getItem('app_version') !== APP_VERSION) {
   localStorage.setItem('app_version', APP_VERSION);
   if ('serviceWorker' in navigator) {
@@ -683,26 +683,50 @@ let activeTTSAudios = [];
 function speakOut(text) {
   if (!voiceNotesEnabled) return;
   
-  // Format network TTS audio matching system language
   const lang = (navigator.language || 'en').split('-')[0];
   const encodedText = encodeURIComponent(text);
   const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodedText}`;
   
-  const ttsAudio = new Audio(ttsUrl);
-  activeTTSAudios.push(ttsAudio);
-  
-  ttsAudio.onended = ttsAudio.onerror = () => {
-    activeTTSAudios = activeTTSAudios.filter(a => a !== ttsAudio);
-  };
-  
-  ttsAudio.play()
-    .then(() => {
-      console.log("Playing network TTS background audio.");
-    })
-    .catch(err => {
-      console.warn("Background TTS audio failed, using Web Speech API fallback:", err);
+  if (keepAliveAudio && !isPaused) {
+    // Actively running in background: reuse the keep-alive audio element to bypass autoplay restrictions
+    keepAliveAudio.loop = false;
+    keepAliveAudio.src = ttsUrl;
+    
+    const restoreSilent = () => {
+      // Re-initialize dynamic 5s silence and loop
+      keepAliveAudio.src = createSilentAudioURL(5);
+      keepAliveAudio.loop = true;
+      keepAliveAudio.play().catch(e => console.warn("Failed to resume keep-alive silence:", e));
+      keepAliveAudio.onended = null;
+      keepAliveAudio.onerror = null;
+    };
+    
+    keepAliveAudio.onended = restoreSilent;
+    keepAliveAudio.onerror = (e) => {
+      console.warn("TTS playback error on keepalive audio, restoring silence", e);
+      restoreSilent();
+      playSpeechNative(text);
+    };
+    
+    keepAliveAudio.play().then(() => {
+      console.log("Playing background speech via keep-alive audio element.");
+    }).catch(err => {
+      console.warn("Play failed on keepalive audio, falling back to native:", err);
+      restoreSilent();
       playSpeechNative(text);
     });
+  } else {
+    // Foreground / test sound click: use standard temporary audio element
+    const tempAudio = new Audio(ttsUrl);
+    activeTTSAudios.push(tempAudio);
+    tempAudio.onended = tempAudio.onerror = () => {
+      activeTTSAudios = activeTTSAudios.filter(a => a !== tempAudio);
+    };
+    tempAudio.play().catch(err => {
+      console.warn("Temp TTS audio play failed, using native fallback:", err);
+      playSpeechNative(text);
+    });
+  }
 }
 
 function playSpeechNative(text) {
